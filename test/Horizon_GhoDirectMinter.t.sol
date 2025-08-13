@@ -19,23 +19,27 @@ import {DeploymentLibrary} from "../script/DeployHorizon.s.sol";
 contract Horizon_GHODirectMinter_Test is Test {
     using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
 
-    IPool constant POOL = IPool(0xAe05Cd22df81871bc7cC2a04BeCfb516bFe332C8); // horizon pool
+    IPool public constant POOL =
+        IPool(0xAe05Cd22df81871bc7cC2a04BeCfb516bFe332C8); // horizon pool
     address public constant USTB_TOKEN =
         0x43415eB6ff9DB7E26A15b704e7A3eDCe97d31C4e;
+
+    address internal council = DeploymentLibrary.COUNCIL;
 
     GhoDirectMinter internal minter;
     IERC20 internal ghoAToken;
     HorizonGHOListing internal proposal;
 
-    function setUp() external {
-        vm.createSelectFork(vm.rpcUrl("mainnet"));
+    address internal owner = DeploymentLibrary.EXECUTOR_LVL_1;
 
-        // execute pending gho listing payload
-        GovV3Helpers.executePayload(vm, 218); // TODO: update
+    function setUp() external {
+        vm.createSelectFork(vm.rpcUrl("mainnet"), 23130843);
+
+        _listingPayload();
 
         // execute payload
         address facilitator = DeploymentLibrary._deployHorizon();
-        proposal = new HorizonGHOListing();
+        proposal = new HorizonGHOListing(facilitator);
         GovV3Helpers.executePayload(vm, address(proposal));
 
         address[] memory facilitators = IGhoToken(
@@ -46,18 +50,36 @@ contract Horizon_GHODirectMinter_Test is Test {
         ghoAToken = IERC20(minter.GHO_A_TOKEN());
     }
 
+    function _listingPayload() internal {
+        address EMERGENCY_MULTISIG = 0x13B57382c36BAB566E75C72303622AF29E27e1d3;
+        address LISTING_EXECUTOR_ADDRESS = 0x09e8E1408a68778CEDdC1938729Ea126710E7Dda;
+        address horizonPhaseOneListing = 0x7547670c534823AcbBDB214AdD9D9D3395F57e0C;
+        vm.prank(EMERGENCY_MULTISIG);
+        (bool success, bytes memory data) = LISTING_EXECUTOR_ADDRESS.call(
+            abi.encodeWithSignature(
+                "executeTransaction(address,uint256,string,bytes,bool)",
+                address(horizonPhaseOneListing), // target
+                0, // value
+                "execute()", // signature
+                "", // data
+                true // withDelegatecall
+            )
+        );
+        assembly {
+            if iszero(success) {
+                revert(add(data, 32), mload(data))
+            }
+        }
+    }
+
     function test_mintAndSupply_owner(uint256 amount) public returns (uint256) {
-        return
-            _mintAndSupply(
-                amount,
-                DeploymentLibrary.HORIZON_OPERATIONAL_MULTISIG
-            );
+        return _mintAndSupply(amount, owner);
     }
 
     function test_mintAndSupply_council(
         uint256 amount
     ) external returns (uint256) {
-        return _mintAndSupply(amount, DeploymentLibrary.COUNCIL);
+        return _mintAndSupply(amount, council);
     }
 
     function test_mintAndSupply_rando() external {
@@ -67,29 +89,21 @@ contract Horizon_GHODirectMinter_Test is Test {
                 address(this)
             )
         );
-        minter.mintAndSupply(vm.randomUint(1, 100e18));
+        minter.mintAndSupply(100);
     }
 
     function test_withdrawAndBurn_owner(
         uint256 supplyAmount,
         uint256 withdrawAmount
     ) external {
-        _withdrawAndBurn(
-            supplyAmount,
-            withdrawAmount,
-            DeploymentLibrary.HORIZON_OPERATIONAL_MULTISIG
-        );
+        _withdrawAndBurn(supplyAmount, withdrawAmount, owner);
     }
 
     function test_withdrawAndBurn_council(
         uint256 supplyAmount,
         uint256 withdrawAmount
     ) external {
-        _withdrawAndBurn(
-            supplyAmount,
-            withdrawAmount,
-            DeploymentLibrary.COUNCIL
-        );
+        _withdrawAndBurn(supplyAmount, withdrawAmount, council);
     }
 
     function test_withdrawAndBurn_rando() external {
@@ -105,16 +119,11 @@ contract Horizon_GHODirectMinter_Test is Test {
     function test_transferExcessToTreasury() external {
         uint256 amount = test_mintAndSupply_owner(1000 ether);
         // supply USTB and borrow gho
-        deal(USTB_TOKEN, address(this), 10_000e6);
+        vm.startPrank(owner);
+        deal(USTB_TOKEN, owner, 10_000e6);
         IERC20(USTB_TOKEN).approve(address(POOL), 10_000e6);
-        POOL.deposit(USTB_TOKEN, 10_000e6, address(this), 0);
-        POOL.borrow(
-            AaveV3EthereumAssets.GHO_UNDERLYING,
-            amount,
-            2,
-            0,
-            address(this)
-        );
+        POOL.deposit(USTB_TOKEN, 10_000e6, owner, 0);
+        POOL.borrow(AaveV3EthereumAssets.GHO_UNDERLYING, amount, 2, 0, owner);
 
         // generate some yield
         vm.warp(block.timestamp + 1000);
@@ -183,10 +192,7 @@ contract Horizon_GHODirectMinter_Test is Test {
         address caller
     ) internal {
         // setup
-        uint256 amount = _mintAndSupply(
-            supplyAmount,
-            DeploymentLibrary.HORIZON_OPERATIONAL_MULTISIG
-        );
+        uint256 amount = _mintAndSupply(supplyAmount, owner);
         withdrawAmount = bound(withdrawAmount, 1, amount);
         uint256 totalATokenSupplyBefore = ghoAToken.totalSupply();
         (, uint256 levelBefore) = IGhoToken(AaveV3EthereumAssets.GHO_UNDERLYING)

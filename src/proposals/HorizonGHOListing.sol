@@ -7,7 +7,10 @@ import {IPoolConfigurator} from "aave-v3-origin/contracts/interfaces/IPoolConfig
 import {IPoolDataProvider} from "aave-v3-origin/contracts/interfaces/IPoolDataProvider.sol";
 import {IACLManager} from "aave-v3-origin/contracts/interfaces/IACLManager.sol";
 import {IAccessControl} from "aave-v3-origin/contracts/dependencies/openzeppelin/contracts/IAccessControl.sol";
+import {GhoEthereum} from "aave-address-book/GhoEthereum.sol";
 
+import {IGhoBucketSteward} from "../interfaces/IGhoBucketSteward.sol";
+import {IGhoDirectMinter} from "../interfaces/IGhoDirectMinter.sol";
 import {IGhoToken} from "../interfaces/IGhoToken.sol";
 
 // copied from AIP draft
@@ -33,26 +36,26 @@ contract HorizonGHOListing is IProposalGenericExecutor {
     // Horizon addresses
     address public constant EMISSION_ADMIN =
         0xac140648435d03f784879cd789130F22Ef588Fcd;
-    address public constant EMISSION_MANAGER =
-        0xC2201708289b2C6A1d461A227A7E5ee3e7fE9A2F;
-    address public constant PROTOCOL_DATA_PROVIDER =
-        0x53519c32f73fE1797d10210c4950fFeBa3b21504;
+    IEmissionManager public constant EMISSION_MANAGER =
+        IEmissionManager(0xC2201708289b2C6A1d461A227A7E5ee3e7fE9A2F);
+    IPoolDataProvider public constant PROTOCOL_DATA_PROVIDER =
+        IPoolDataProvider(0x53519c32f73fE1797d10210c4950fFeBa3b21504);
     address public constant POOL_CONFIGURATOR =
         0x83Cb1B4af26EEf6463aC20AFbAC9c0e2E017202F;
     address public constant ACL_MANAGER =
         0xEFD5df7b87d2dCe6DD454b4240b3e0A4db562321;
     // Gho
-    address public constant GHO_DIRECT_MINTER =
-        0x1000000000000000000000000000000000000000; // TODO
-    address public constant GHO_BUCKET_STEWARD =
-        0x2000000000000000000000000000000000000000; // TODO
-    uint128 public constant BUCKET_CAPACITY = 1_000e18; // TODO
+    IGhoBucketSteward public constant GHO_BUCKET_STEWARD =
+        IGhoBucketSteward(GhoEthereum.GHO_BUCKET_STEWARD);
+    address public immutable GHO_DIRECT_MINTER;
 
-    function execute() external {
-        // intentionally left blank
+    uint128 public constant GHO_BUCKET_CAPACITY = 1_000_000e18;
+
+    constructor(address ghoDirectMinter) {
+        GHO_DIRECT_MINTER = ghoDirectMinter;
     }
 
-    function _postExecute() internal {
+    function execute() external {
         // unpause pool
         IPoolConfigurator(POOL_CONFIGURATOR).setPoolPause(false);
         // set emission admins on all listed tokens
@@ -71,49 +74,33 @@ contract HorizonGHOListing is IProposalGenericExecutor {
         gho.addFacilitator(
             GHO_DIRECT_MINTER,
             "HorizonGhoDirectMinter",
-            BUCKET_CAPACITY
+            GHO_BUCKET_CAPACITY
         );
-        gho.grantRole(gho.BUCKET_MANAGER_ROLE(), GHO_BUCKET_STEWARD);
+
+        // allow risk council to control the bucket capacity
+        address[] memory facilitators = new address[](1);
+        facilitators[0] = address(GHO_DIRECT_MINTER);
+        GHO_BUCKET_STEWARD.setControlledFacilitator(facilitators, true);
     }
 
     function _setEmissionAdmins() internal {
-        // stablecoins
+        // stable coins
         _setEmissionAdminStablecoin(GHO_TOKEN);
         _setEmissionAdminStablecoin(RLUSD_TOKEN);
         _setEmissionAdminStablecoin(USDC_TOKEN);
         // rwa tokens
-        IEmissionManager(EMISSION_MANAGER).setEmissionAdmin(
-            USTB_TOKEN,
-            EMISSION_ADMIN
-        );
-        IEmissionManager(EMISSION_MANAGER).setEmissionAdmin(
-            USCC_TOKEN,
-            EMISSION_ADMIN
-        );
-        IEmissionManager(EMISSION_MANAGER).setEmissionAdmin(
-            USYC_TOKEN,
-            EMISSION_ADMIN
-        );
-        IEmissionManager(EMISSION_MANAGER).setEmissionAdmin(
-            JAAA_TOKEN,
-            EMISSION_ADMIN
-        );
-        IEmissionManager(EMISSION_MANAGER).setEmissionAdmin(
-            JTRSY_TOKEN,
-            EMISSION_ADMIN
-        );
+        EMISSION_MANAGER.setEmissionAdmin(USTB_TOKEN, EMISSION_ADMIN);
+        EMISSION_MANAGER.setEmissionAdmin(USCC_TOKEN, EMISSION_ADMIN);
+        EMISSION_MANAGER.setEmissionAdmin(USYC_TOKEN, EMISSION_ADMIN);
+        EMISSION_MANAGER.setEmissionAdmin(JAAA_TOKEN, EMISSION_ADMIN);
+        EMISSION_MANAGER.setEmissionAdmin(JTRSY_TOKEN, EMISSION_ADMIN);
     }
 
     function _setEmissionAdminStablecoin(address token) internal {
-        (address aToken, , ) = IPoolDataProvider(PROTOCOL_DATA_PROVIDER)
-            .getReserveTokensAddresses(token);
-        IEmissionManager(EMISSION_MANAGER).setEmissionAdmin(
-            token,
-            EMISSION_ADMIN
+        (address aToken, , ) = PROTOCOL_DATA_PROVIDER.getReserveTokensAddresses(
+            token
         );
-        IEmissionManager(EMISSION_MANAGER).setEmissionAdmin(
-            aToken,
-            EMISSION_ADMIN
-        );
+        EMISSION_MANAGER.setEmissionAdmin(token, EMISSION_ADMIN);
+        EMISSION_MANAGER.setEmissionAdmin(aToken, EMISSION_ADMIN);
     }
 }
