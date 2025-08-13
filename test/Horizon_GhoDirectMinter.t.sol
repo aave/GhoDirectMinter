@@ -19,7 +19,7 @@ import {DeploymentLibrary} from "../script/DeployHorizon.s.sol";
 contract Horizon_GHODirectMinter_Test is Test {
     using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
 
-    IPool constant POOL = IPool(0xAe05Cd22df81871bc7cC2a04BeCfb516bFe332C8);
+    IPool constant POOL = IPool(0xAe05Cd22df81871bc7cC2a04BeCfb516bFe332C8); // horizon pool
     address public constant USTB_TOKEN =
         0x43415eB6ff9DB7E26A15b704e7A3eDCe97d31C4e;
 
