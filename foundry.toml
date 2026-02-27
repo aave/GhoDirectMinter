@@ -2,6 +2,11 @@
 src = "src"
 out = "out"
 libs = ["lib"]
+optimizer = true
+optimizer_runs = 200
+solc = '0.8.27'
+evm_version = 'shanghai'
+bytecode_hash = 'none'
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
 [rpc_endpoints]
@@ -28,9 +33,6 @@ gnosis = "${RPC_GNOSIS}"
 zkEVM = "${RPC_ZKEVM}"
 celo = "${RPC_CELO}"
 zksync = "${RPC_ZKSYNC}"
-
-[etherscan]
-mainnet = { key = "${ETHERSCAN_API_KEY_MAINNET}", chain = 1 }
 
 [fmt]
 tab_width = 2

@@ -47,8 +47,7 @@ interface IGhoToken is IERC20, IAccessControl {
    * @param facilitatorLabel A human readable identifier for the facilitator
    * @param bucketCapacity The upward limit of GHO can be minted by the facilitator
    */
-  function addFacilitator(address facilitatorAddress, string calldata facilitatorLabel, uint128 bucketCapacity)
-    external;
+  function addFacilitator(address facilitatorAddress, string calldata facilitatorLabel, uint128 bucketCapacity) external;
 
   /**
    * @notice Remove the facilitator from the facilitators list.
