@@ -8,6 +8,7 @@ import {
   ITransparentProxyFactory
 } from "solidity-utils/contracts/transparent-proxy/interfaces/ITransparentProxyFactory.sol";
 import {GhoDirectMinter} from "../src/GhoDirectMinter.sol";
+import {GhoDirectMinterV4} from "../src/GhoDirectMinterV4.sol";
 import {IGhoToken} from "../src/interfaces/IGhoToken.sol";
 
 import {AaveV3Ethereum, AaveV3EthereumAssets} from "aave-address-book/AaveV3Ethereum.sol";
@@ -29,6 +30,21 @@ library DeploymentLibrary {
       vaultImpl,
       upgradeAdmin,
       abi.encodeWithSelector(GhoDirectMinter.initialize.selector, address(GovernanceV3Ethereum.EXECUTOR_LVL_1), council)
+    );
+  }
+
+  function _deployV4Facilitator(
+    ITransparentProxyFactory proxyFactory,
+    address upgradeAdmin,
+    address hub,
+    address gho,
+    address council
+  ) internal returns (address) {
+    address impl = address(new GhoDirectMinterV4(hub, gho));
+    return proxyFactory.create(
+      impl,
+      upgradeAdmin,
+      abi.encodeCall(GhoDirectMinterV4.initialize, (address(GovernanceV3Ethereum.EXECUTOR_LVL_1), council))
     );
   }
 
