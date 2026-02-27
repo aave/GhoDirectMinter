@@ -4,7 +4,9 @@ pragma solidity ^0.8.0;
 import {Initializable} from "openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
-import {UpgradeableOwnableWithGuardian} from "solidity-utils/contracts/access-control/UpgradeableOwnableWithGuardian.sol";
+import {
+  UpgradeableOwnableWithGuardian
+} from "solidity-utils/contracts/access-control/UpgradeableOwnableWithGuardian.sol";
 import {IGhoToken} from "./interfaces/IGhoToken.sol";
 import {IGhoDirectMinterV4} from "./interfaces/IGhoDirectMinterV4.sol";
 import {IHub} from "aave-v4/hub/interfaces/IHub.sol";

@@ -7,7 +7,9 @@ import {AaveV3EthereumAssets} from "aave-address-book/AaveV3Ethereum.sol";
 import {GovernanceV3Ethereum} from "aave-address-book/GovernanceV3Ethereum.sol";
 import {GhoEthereum} from "aave-address-book/GhoEthereum.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import {ITransparentProxyFactory} from "solidity-utils/contracts/transparent-proxy/interfaces/ITransparentProxyFactory.sol";
+import {
+  ITransparentProxyFactory
+} from "solidity-utils/contracts/transparent-proxy/interfaces/ITransparentProxyFactory.sol";
 import {IWithGuardian} from "solidity-utils/contracts/access-control/UpgradeableOwnableWithGuardian.sol";
 import {IHub} from "aave-v4/hub/interfaces/IHub.sol";
 import {IHubBase} from "aave-v4/hub/interfaces/IHubBase.sol";
@@ -35,11 +37,7 @@ contract GHODirectMinterV4_Test is Test {
 
     minter = IGhoDirectMinterV4(
       DeploymentLibrary._deployV4Facilitator(
-        ITransparentProxyFactory(MiscEthereum.TRANSPARENT_PROXY_FACTORY),
-        owner,
-        address(hub),
-        address(gho),
-        council
+        ITransparentProxyFactory(MiscEthereum.TRANSPARENT_PROXY_FACTORY), owner, address(hub), address(gho), council
       )
     );
     ghoAssetId = hub.getAssetId(address(gho));
@@ -51,11 +49,7 @@ contract GHODirectMinterV4_Test is Test {
       ghoAssetId,
       address(minter),
       IHub.SpokeConfig({
-        addCap: hub.MAX_ALLOWED_SPOKE_CAP(),
-        drawCap: 0,
-        riskPremiumThreshold: 0,
-        active: true,
-        halted: false
+        addCap: hub.MAX_ALLOWED_SPOKE_CAP(), drawCap: 0, riskPremiumThreshold: 0, active: true, halted: false
       })
     );
 
@@ -83,9 +77,7 @@ contract GHODirectMinterV4_Test is Test {
   }
 
   function test_mintAndSupply_revertsWith_InvalidCaller() external {
-    vm.expectRevert(
-      abi.encodeWithSelector(IWithGuardian.OnlyGuardianOrOwnerInvalidCaller.selector, address(this))
-    );
+    vm.expectRevert(abi.encodeWithSelector(IWithGuardian.OnlyGuardianOrOwnerInvalidCaller.selector, address(this)));
     minter.mintAndSupply(100);
   }
 
@@ -98,9 +90,7 @@ contract GHODirectMinterV4_Test is Test {
   }
 
   function test_withdrawAndBurn_rando() external {
-    vm.expectRevert(
-      abi.encodeWithSelector(IWithGuardian.OnlyGuardianOrOwnerInvalidCaller.selector, address(this))
-    );
+    vm.expectRevert(abi.encodeWithSelector(IWithGuardian.OnlyGuardianOrOwnerInvalidCaller.selector, address(this)));
     minter.withdrawAndBurn(100);
   }
 
@@ -214,11 +204,7 @@ contract GHODirectMinterV4_Test is Test {
     minter.mintAndSupply(amount);
 
     (, uint256 levelAfter) = gho.getFacilitatorBucket(address(minter));
-    assertApproxEqAbs(
-      hub.getSpokeAddedAssets(ghoAssetId, address(minter)),
-      minterAddedAssetsBefore + amount,
-      1
-    );
+    assertApproxEqAbs(hub.getSpokeAddedAssets(ghoAssetId, address(minter)), minterAddedAssetsBefore + amount, 1);
     assertApproxEqAbs(hub.getAddedAssets(ghoAssetId), totalAddedAssetsBefore + amount, 1);
     // bucket level is exact
     assertEq(levelAfter, levelBefore + amount);
