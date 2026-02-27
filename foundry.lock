@@ -4,5 +4,11 @@
       "name": "main",
       "rev": "0459d4ef721c6306a194a36a559a8462f9b19633"
     }
+  },
+  "lib/aave-v4": {
+    "tag": {
+      "name": "v0.5.9",
+      "rev": "c3b92877ec49c791e7eaaf77afe73eabd9bb7b1e"
+    }
   }
 }
