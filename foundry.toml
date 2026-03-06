@@ -33,6 +33,7 @@ gnosis = "${RPC_GNOSIS}"
 zkEVM = "${RPC_ZKEVM}"
 celo = "${RPC_CELO}"
 zksync = "${RPC_ZKSYNC}"
+devnet = "https://virtual.mainnet-aave.us-east.rpc.tenderly.co/38393fd3-0a79-4e60-b8cc-c6bb5903454a"
 
 [fmt]
 tab_width = 2
