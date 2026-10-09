@@ -1,0 +1,25 @@
+.gitmodules
+  s_80d0c3c6be7854::t_87ab63451b89f5 8
+foundry.lock
+  s_80d0c3c6be7854::t_c025a40e8d7741 5,9-11,14
+lib/aave-helpers
+  s_80d0c3c6be7854::t_06e90fcee233d7 1
+lib/aave-v4
+  s_80d0c3c6be7854::t_cbc494dd9f91cf 1
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0f1d92741441aa567ecae1714d59d4ef59b45939",
+  "prompts": {},
+  "sessions": {
+    "s_80d0c3c6be7854": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bc3b9807-f93b-48e8-a292-6fe2511ab51d",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "DhairyaSethi <55102840+DhairyaSethi@users.noreply.github.com>"
+    }
+  }
+}
