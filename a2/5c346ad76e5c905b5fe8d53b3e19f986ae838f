@@ -1,0 +1,19 @@
+remappings.txt
+  s_80d0c3c6be7854::t_4271816471dc12 10-11
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a25c346ad76e5c905b5fe8d53b3e19f986ae838f",
+  "prompts": {},
+  "sessions": {
+    "s_80d0c3c6be7854": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bc3b9807-f93b-48e8-a292-6fe2511ab51d",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "DhairyaSethi <55102840+DhairyaSethi@users.noreply.github.com>"
+    }
+  }
+}
