@@ -2,7 +2,3 @@
 	path = lib/aave-helpers
 	url = https://github.com/aave-dao/aave-helpers
 	branch = main
-[submodule "lib/aave-v4"]
-	path = lib/aave-v4
-	url = https://github.com/aave/aave-v4
-	branch = main

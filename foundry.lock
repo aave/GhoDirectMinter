@@ -4,11 +4,5 @@
       "name": "main",
       "rev": "5364521bed05b3b261a21811a66cba7e23ea0cb6"
     }
-  },
-  "lib/aave-v4": {
-    "branch": {
-      "name": "main",
-      "rev": "326751ee2f3b9f65493c9cde17f5c611cb19b538"
-    }
   }
 }
