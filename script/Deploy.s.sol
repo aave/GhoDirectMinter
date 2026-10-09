@@ -7,13 +7,16 @@ import {ICollector} from "aave-v3-origin/contracts/treasury/ICollector.sol";
 import {
   ITransparentProxyFactory
 } from "solidity-utils/contracts/transparent-proxy/interfaces/ITransparentProxyFactory.sol";
-import {GhoDirectMinter} from "../src/GhoDirectMinter.sol";
-import {IGhoToken} from "../src/interfaces/IGhoToken.sol";
+import {GhoDirectMinter} from "src/GhoDirectMinter.sol";
+import {GhoDirectMinterV4} from "src/GhoDirectMinterV4.sol";
+import {IGhoToken} from "src/interfaces/IGhoToken.sol";
 
 import {AaveV3Ethereum, AaveV3EthereumAssets} from "aave-address-book/AaveV3Ethereum.sol";
 import {AaveV3EthereumLido} from "aave-address-book/AaveV3EthereumLido.sol";
 import {GovernanceV3Ethereum} from "aave-address-book/GovernanceV3Ethereum.sol";
 import {MiscEthereum} from "aave-address-book/MiscEthereum.sol";
+import {GhoEthereum} from "aave-address-book/GhoEthereum.sol";
+import {AaveV4EthereumHubs} from "aave-address-book/AaveV4Ethereum.sol";
 
 library DeploymentLibrary {
   function _deployFacilitator(
@@ -29,6 +32,31 @@ library DeploymentLibrary {
       vaultImpl,
       upgradeAdmin,
       abi.encodeWithSelector(GhoDirectMinter.initialize.selector, address(GovernanceV3Ethereum.EXECUTOR_LVL_1), council)
+    );
+  }
+
+  function _deployV4Facilitator(
+    ITransparentProxyFactory proxyFactory,
+    address upgradeAdmin,
+    address hub,
+    address gho,
+    address council
+  ) internal returns (address) {
+    address impl = address(new GhoDirectMinterV4(hub, gho));
+    return proxyFactory.create(
+      impl,
+      upgradeAdmin,
+      abi.encodeCall(GhoDirectMinterV4.initialize, (address(GovernanceV3Ethereum.EXECUTOR_LVL_1), council))
+    );
+  }
+
+  function _deployV4Core() internal returns (address) {
+    return _deployV4Facilitator(
+      ITransparentProxyFactory(MiscEthereum.TRANSPARENT_PROXY_FACTORY),
+      GovernanceV3Ethereum.EXECUTOR_LVL_1,
+      address(AaveV4EthereumHubs.CORE_HUB),
+      GhoEthereum.GHO_TOKEN,
+      GhoEthereum.RISK_COUNCIL
     );
   }
 
@@ -49,5 +77,11 @@ library DeploymentLibrary {
 contract DeployCore is EthereumScript {
   function run() external broadcast {
     DeploymentLibrary._deployCore();
+  }
+}
+
+contract DeployV4Core is EthereumScript {
+  function run() external broadcast {
+    DeploymentLibrary._deployV4Core();
   }
 }
