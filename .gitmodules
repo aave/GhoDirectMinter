@@ -5,4 +5,4 @@
 [submodule "lib/aave-v4"]
 	path = lib/aave-v4
 	url = https://github.com/aave/aave-v4
-	branch = v0.5.9
+	branch = main
