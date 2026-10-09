@@ -5,7 +5,6 @@ import {
   UpgradeableOwnableWithGuardian
 } from "solidity-utils/contracts/access-control/UpgradeableOwnableWithGuardian.sol";
 import {Initializable} from "openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
-import {SafeERC20, IERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IHub} from "aave-v4/hub/interfaces/IHub.sol";
 import {IGhoDirectMinterV4} from "src/interfaces/IGhoDirectMinterV4.sol";
 import {IGhoToken} from "src/interfaces/IGhoToken.sol";
