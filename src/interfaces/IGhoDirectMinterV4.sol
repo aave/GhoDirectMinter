@@ -27,14 +27,11 @@ interface IGhoDirectMinterV4 {
   function transferExcessToTreasury() external;
 
   /// @notice Returns the address of the Aave v4 Hub.
-  /// @return The Hub contract address.
   function hub() external view returns (address);
 
   /// @notice Returns the asset identifier for GHO in the Hub.
-  /// @return The asset identifier.
   function assetId() external view returns (uint256);
 
   /// @notice Returns the address of the GHO token.
-  /// @return The GHO token address.
   function gho() external view returns (address);
 }
