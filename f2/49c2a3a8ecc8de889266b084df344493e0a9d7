@@ -1,0 +1,21 @@
+test/GhoDirectMinterV4.t.sol
+  s_80d0c3c6be7854::t_302eab80d5dc49 125,129,201-202,220-221
+  s_80d0c3c6be7854::t_e2396034dd1ed6 36-44,95-107
+  s_80d0c3c6be7854::t_f734daae50b973 7,15,24,28,30,87-90,111-112
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f249c2a3a8ecc8de889266b084df344493e0a9d7",
+  "prompts": {},
+  "sessions": {
+    "s_80d0c3c6be7854": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bc3b9807-f93b-48e8-a292-6fe2511ab51d",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "DhairyaSethi <55102840+DhairyaSethi@users.noreply.github.com>"
+    }
+  }
+}
