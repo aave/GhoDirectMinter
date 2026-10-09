@@ -15,6 +15,8 @@ import {AaveV3Ethereum, AaveV3EthereumAssets} from "aave-address-book/AaveV3Ethe
 import {AaveV3EthereumLido} from "aave-address-book/AaveV3EthereumLido.sol";
 import {GovernanceV3Ethereum} from "aave-address-book/GovernanceV3Ethereum.sol";
 import {MiscEthereum} from "aave-address-book/MiscEthereum.sol";
+import {GhoEthereum} from "aave-address-book/GhoEthereum.sol";
+import {AaveV4EthereumHubs} from "aave-address-book/AaveV4Ethereum.sol";
 
 library DeploymentLibrary {
   function _deployFacilitator(
@@ -48,6 +50,16 @@ library DeploymentLibrary {
     );
   }
 
+  function _deployV4Core() internal returns (address) {
+    return _deployV4Facilitator(
+      ITransparentProxyFactory(MiscEthereum.TRANSPARENT_PROXY_FACTORY),
+      GovernanceV3Ethereum.EXECUTOR_LVL_1,
+      address(AaveV4EthereumHubs.CORE_HUB),
+      GhoEthereum.GHO_TOKEN,
+      GhoEthereum.RISK_COUNCIL
+    );
+  }
+
   function _deployCore() internal returns (address) {
     address council = 0x8513e6F37dBc52De87b166980Fa3F50639694B60;
 
@@ -65,5 +77,11 @@ library DeploymentLibrary {
 contract DeployCore is EthereumScript {
   function run() external broadcast {
     DeploymentLibrary._deployCore();
+  }
+}
+
+contract DeployV4Core is EthereumScript {
+  function run() external broadcast {
+    DeploymentLibrary._deployV4Core();
   }
 }
