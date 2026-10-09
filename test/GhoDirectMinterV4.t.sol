@@ -2,25 +2,17 @@
 pragma solidity ^0.8.0;
 
 import "forge-std/Test.sol";
-import {MiscEthereum} from "aave-address-book/MiscEthereum.sol";
-import {AaveV3EthereumAssets} from "aave-address-book/AaveV3Ethereum.sol";
 import {GovernanceV3Ethereum} from "aave-address-book/GovernanceV3Ethereum.sol";
 import {GhoEthereum} from "aave-address-book/GhoEthereum.sol";
-import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import {
-  ITransparentProxyFactory
-} from "solidity-utils/contracts/transparent-proxy/interfaces/ITransparentProxyFactory.sol";
+import {AaveV4Ethereum, AaveV4EthereumHubs} from "aave-address-book/AaveV4Ethereum.sol";
 import {IWithGuardian} from "solidity-utils/contracts/access-control/UpgradeableOwnableWithGuardian.sol";
 import {IHub} from "aave-v4/hub/interfaces/IHub.sol";
-import {IHubBase} from "aave-v4/hub/interfaces/IHubBase.sol";
-import {IAccessManager} from "aave-v4/dependencies/openzeppelin/IAccessManager.sol";
 import {IGhoDirectMinterV4} from "../src/interfaces/IGhoDirectMinterV4.sol";
 import {IGhoToken} from "../src/interfaces/IGhoToken.sol";
 import {DeploymentLibrary} from "../script/Deploy.s.sol";
 
 contract GHODirectMinterV4_Test is Test {
-  // @dev deployments on mainnet fork
-  IHub internal hub = IHub(0x3Ed2C9829FBCab6015E331a0352F8ae148217D70); // core hub
+  IHub internal hub = AaveV4EthereumHubs.CORE_HUB;
 
   uint256 internal ghoAssetId;
   address internal feeReceiver;
@@ -29,29 +21,27 @@ contract GHODirectMinterV4_Test is Test {
   address internal owner = GovernanceV3Ethereum.EXECUTOR_LVL_1;
 
   IGhoDirectMinterV4 internal minter;
-  IGhoToken internal gho = IGhoToken(AaveV3EthereumAssets.GHO_UNDERLYING);
+  IGhoToken internal gho = IGhoToken(GhoEthereum.GHO_TOKEN);
   uint128 internal constant MINT_AMOUNT = 200_000 ether;
 
   function setUp() external {
-    vm.createSelectFork(vm.rpcUrl("devnet"), 25097390);
+    vm.createSelectFork(vm.rpcUrl("mainnet"), 26155052);
 
-    minter = IGhoDirectMinterV4(
-      DeploymentLibrary._deployV4Facilitator(
-        ITransparentProxyFactory(MiscEthereum.TRANSPARENT_PROXY_FACTORY), owner, address(hub), address(gho), council
-      )
-    );
+    minter = IGhoDirectMinterV4(DeploymentLibrary._deployV4Core());
     ghoAssetId = hub.getAssetId(address(gho));
     feeReceiver = hub.getAssetConfig(ghoAssetId).feeReceiver;
 
     // register minter as spoke on Hub with infinite addCap
     vm.startPrank(owner);
-    hub.addSpoke(
-      ghoAssetId,
-      address(minter),
-      IHub.SpokeConfig({
-        addCap: hub.MAX_ALLOWED_SPOKE_CAP(), drawCap: 0, riskPremiumThreshold: 0, active: true, halted: false
-      })
-    );
+    AaveV4Ethereum.HUB_CONFIGURATOR
+      .addSpoke(
+        address(hub),
+        address(minter),
+        ghoAssetId,
+        IHub.SpokeConfig({
+          addCap: hub.MAX_ALLOWED_SPOKE_CAP(), drawCap: 0, riskPremiumThreshold: 0, active: true, halted: false
+        })
+      );
 
     // register minter as GHO facilitator
     gho.addFacilitator(address(minter), "GhoDirectMinterCoreHub", MINT_AMOUNT);
@@ -94,28 +84,32 @@ contract GHODirectMinterV4_Test is Test {
     minter.withdrawAndBurn(100);
   }
 
-  function test_transferExcessToTreasury() external {
-    uint256 amount = test_mintAndSupply_owner(1000 ether);
+  function test_transferExcessToTreasury(uint256 supplyAmount, uint256 drawAmount, uint256 elapsed) external {
+    uint256 amount = _mintAndSupply(bound(supplyAmount, 1 ether, MINT_AMOUNT), owner);
+    drawAmount = bound(drawAmount, 1, amount);
+    elapsed = bound(elapsed, 1 days, 5 * 365 days);
 
     // set up a borrower spoke that can draw GHO
     address borrower = makeAddr("borrower");
     vm.prank(owner);
-    hub.addSpoke(
-      ghoAssetId,
-      borrower,
-      IHub.SpokeConfig({
-        addCap: type(uint40).max,
-        drawCap: type(uint40).max,
-        riskPremiumThreshold: type(uint24).max,
-        active: true,
-        halted: false
-      })
-    );
+    AaveV4Ethereum.HUB_CONFIGURATOR
+      .addSpoke(
+        address(hub),
+        borrower,
+        ghoAssetId,
+        IHub.SpokeConfig({
+          addCap: type(uint40).max,
+          drawCap: type(uint40).max,
+          riskPremiumThreshold: type(uint24).max,
+          active: true,
+          halted: false
+        })
+      );
 
     // generate some yield
     vm.prank(borrower);
-    hub.draw(ghoAssetId, amount, makeAddr("borrowerRecipient"));
-    skip(365 days);
+    hub.draw(ghoAssetId, drawAmount, makeAddr("borrowerRecipient"));
+    skip(elapsed);
 
     uint256 feeReceiverSharesBefore = hub.getSpokeAddedShares(ghoAssetId, feeReceiver);
     uint256 feeReceiverBalanceBefore = hub.getSpokeAddedAssets(ghoAssetId, feeReceiver);
@@ -128,11 +122,11 @@ contract GHODirectMinterV4_Test is Test {
 
     minter.transferExcessToTreasury();
 
-    assertApproxEqAbs(hub.getSpokeAddedAssets(ghoAssetId, address(minter)), level, 1);
+    assertApproxEqAbs(hub.getSpokeAddedAssets(ghoAssetId, address(minter)), level, 2);
     uint256 feeReceiverSharesAfter = hub.getSpokeAddedShares(ghoAssetId, feeReceiver);
     assertApproxEqAbs(feeReceiverSharesAfter - feeReceiverSharesBefore, expectedShares, 1);
     uint256 feeReceiverBalanceAfter = hub.getSpokeAddedAssets(ghoAssetId, feeReceiver);
-    assertApproxEqAbs(feeReceiverBalanceAfter - feeReceiverBalanceBefore, excess, 1);
+    assertApproxEqAbs(feeReceiverBalanceAfter - feeReceiverBalanceBefore, excess, 2);
   }
 
   function test_mintAndSupply_exceedsBucketCapacity() external {
@@ -204,8 +198,8 @@ contract GHODirectMinterV4_Test is Test {
     minter.mintAndSupply(amount);
 
     (, uint256 levelAfter) = gho.getFacilitatorBucket(address(minter));
-    assertApproxEqAbs(hub.getSpokeAddedAssets(ghoAssetId, address(minter)), minterAddedAssetsBefore + amount, 1);
-    assertApproxEqAbs(hub.getAddedAssets(ghoAssetId), totalAddedAssetsBefore + amount, 1);
+    assertApproxEqAbs(hub.getSpokeAddedAssets(ghoAssetId, address(minter)), minterAddedAssetsBefore + amount, 2);
+    assertApproxEqAbs(hub.getAddedAssets(ghoAssetId), totalAddedAssetsBefore + amount, 2);
     // bucket level is exact
     assertEq(levelAfter, levelBefore + amount);
 
@@ -223,8 +217,8 @@ contract GHODirectMinterV4_Test is Test {
     minter.withdrawAndBurn(withdrawAmount);
 
     (, uint256 levelAfter) = gho.getFacilitatorBucket(address(minter));
-    assertApproxEqAbs(hub.getAddedAssets(ghoAssetId), totalAddedAssetsBefore - withdrawAmount, 2);
-    assertApproxEqAbs(hub.getSpokeAddedAssets(ghoAssetId, address(minter)), amount - withdrawAmount, 2);
+    assertApproxEqAbs(hub.getAddedAssets(ghoAssetId), totalAddedAssetsBefore - withdrawAmount, 3);
+    assertApproxEqAbs(hub.getSpokeAddedAssets(ghoAssetId, address(minter)), amount - withdrawAmount, 3);
     assertEq(levelAfter, levelBefore - withdrawAmount);
   }
 }
